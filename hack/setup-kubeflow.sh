@@ -21,11 +21,17 @@ set -o nounset
 set -o pipefail
 
 echo "Creating Kubeflow namespace..."
-kubectl create namespace kubeflow
+#kubectl create namespace kubeflow
 
 echo "Deploying all Kubeflow components..."
-while ! kustomize build example | kubectl apply -f -; do echo "Retrying to apply resources"; sleep 10; done
+while ! kustomize build example --load_restrictor none | kubectl apply -f - --validate=false; do echo "Retrying to apply resources"; sleep 10; done
 
+echo "---"
 echo "Waiting for all Kubeflow components to become ready..."
 TIMEOUT=600s  # 10mins
-kubectl wait --timeout=${TIMEOUT} --all --all-namespaces --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n istio-system -l app=istiod --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n istio-system -l app=istio-ingressgateway --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n kubeflow -l app=ml-pipeline --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n kubeflow -l app=kfserving --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n kubeflow -l katib.kubeflow.org/component=controller --for=condition=Ready pod
+kubectl wait --timeout=${TIMEOUT} -n kubeflow -l control-plane=kubeflow-training-operator --for=condition=Ready pod
