@@ -3,7 +3,6 @@ kind: Role
 metadata:
   annotations:
   name: pipeline-runner
-  namespace: kubeflow-user
 rules:
 - apiGroups:
   - kubeflow.org
