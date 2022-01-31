@@ -27,11 +27,23 @@ echo "Deploying all Kubeflow components..."
 while ! kustomize build example --load_restrictor none | kubectl apply -f - --validate=false; do echo "Retrying to apply resources"; sleep 10; done
 
 echo "---"
-echo "Waiting for all Kubeflow components to become ready..."
+echo "Waiting for all Kubeflow components to become ready."
 TIMEOUT=600s  # 10mins
+
+echo "Waiting for istio-system/istiod to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n istio-system -l app=istiod --for=condition=Ready pod
+
+echo "Waiting for istio-system/istio-ingressgateway to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n istio-system -l app=istio-ingressgateway --for=condition=Ready pod
+
+echo "Waiting for kubeflow/ml-pipelines to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n kubeflow -l app=ml-pipeline --for=condition=Ready pod
+
+echo "Waiting for kubeflow/kfserving to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n kubeflow -l app=kfserving --for=condition=Ready pod
+
+echo "Waiting for kubeflow/katib to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n kubeflow -l katib.kubeflow.org/component=controller --for=condition=Ready pod
+
+echo "Waiting for kubeflow/training-operator to become ready..."
 kubectl wait --timeout=${TIMEOUT} -n kubeflow -l control-plane=kubeflow-training-operator --for=condition=Ready pod
