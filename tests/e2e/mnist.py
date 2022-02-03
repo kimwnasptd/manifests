@@ -6,14 +6,12 @@ pip install kubeflow-katib==0.12.0
 """
 import kfp
 import kfp.dsl as dsl
+from kubernetes import config
 
-from utils.katib import create_katib_experiment_task
-from utils.tfjob import create_tfjob_task
-from utils.kfserving import create_kfserving_task
+import settings
+from utils import katib, kfserving, tfjob, watch
 
-NAME = "mnist-e2e"
-NAMESPACE = "kubeflow-user-example-com"
-TRAINING_STEPS = "200"
+config.load_kube_config()
 
 
 @dsl.pipeline(
@@ -21,10 +19,12 @@ TRAINING_STEPS = "200"
     description="An end to end mnist example including hyperparameter tuning, "
                 "train and inference",
 )
-def mnist_pipeline(name=NAME, namespace=NAMESPACE,
-                   training_steps=TRAINING_STEPS):
+def mnist_pipeline(name=settings.PIPELINE_NAME,
+                   namespace=settings.NAMESPACE,
+                   training_steps=settings.TRAINING_STEPS):
     # Run the hyperparameter tuning with Katib.
-    katib_op = create_katib_experiment_task(name, namespace, training_steps)
+    katib_op = katib.create_katib_experiment_task(
+        name, namespace, training_steps)
 
     # Create volume to train and serve the model.
     model_volume_op = dsl.VolumeOp(
@@ -35,18 +35,31 @@ def mnist_pipeline(name=NAME, namespace=NAMESPACE,
     )
 
     # Run the distributive training with TFJob.
-    tfjob_op = create_tfjob_task(name, namespace, training_steps, katib_op,
-                                 model_volume_op)
+    tfjob_op = tfjob.create_tfjob_task(name, namespace, training_steps,
+                                       katib_op, model_volume_op)
 
     # Create the KFServing inference.
-    create_kfserving_task(name, namespace, tfjob_op, model_volume_op)
+    kfserving.create_kfserving_task(name, namespace, tfjob_op, model_volume_op)
 
 
-# Run the Kubeflow Pipeline in the user's namespace.
-kfp_client = kfp.Client()
-run_id = kfp_client.create_run_from_pipeline_func(
-    mnist_pipeline,
-    namespace=NAMESPACE,
-    arguments={},
-).run_id
-print("Run ID: ", run_id)
+if __name__ == "__main__":
+    # Run the Kubeflow Pipeline in the user's namespace.
+    kfp_client = kfp.Client(host="http://localhost:3000",
+                            namespace="kubeflow-user-example-com")
+    kfp_client.runs.api_client.default_headers.update(
+        {"kubeflow-userid": "kubeflow-user-example-com"})
+
+    tfjob.wait_to_succeed(name=settings.TFJOB_NAME,
+                          namespace=settings.NAMESPACE,
+                          timeout=settings.TIMEOUT)
+
+    katib.wait_to_succeed(name=settings.EXPERIMENT_NAME,
+                          namespace=settings.NAMESPACE,
+                          timeout=settings.TIMEOUT)
+
+    # run_id = kfp_client.create_run_from_pipeline_func(
+    # mnist_pipeline,
+    # namespace=settings.NAMESPACE,
+    # arguments={},
+    # ).run_id
+    # print("Run ID: ", run_id)

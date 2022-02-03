@@ -1,17 +1,25 @@
 """Katib helper functions to create a Pipeline task."""
 from kfp import components
+from kubeflow.katib import (ApiClient, V1beta1AlgorithmSpec,
+                            V1beta1ExperimentSpec, V1beta1FeasibleSpace,
+                            V1beta1ObjectiveSpec, V1beta1ParameterSpec,
+                            V1beta1TrialParameterSpec, V1beta1TrialTemplate)
 
-from kubeflow.katib import ApiClient
-from kubeflow.katib import V1beta1ExperimentSpec
-from kubeflow.katib import V1beta1AlgorithmSpec
-from kubeflow.katib import V1beta1ObjectiveSpec
-from kubeflow.katib import V1beta1ParameterSpec
-from kubeflow.katib import V1beta1FeasibleSpace
-from kubeflow.katib import V1beta1TrialTemplate
-from kubeflow.katib import V1beta1TrialParameterSpec
+from . import watch
 
 TFJOB_IMAGE = "docker.io/liuhougangxa/tf-estimator-mnist"
-KATIB_LAUNCHER_URL = "https://raw.githubusercontent.com/kubeflow/pipelines/master/components/kubeflow/katib-launcher/component.yaml"
+KATIB_LAUNCHER_URL = "https://raw.githubusercontent.com/kubeflow/pipelines/1.8.0-rc.1/components/kubeflow/katib-launcher/component.yaml"
+
+GROUP = "kubeflow.org"
+PLURAL = "experiments"
+VERSION = "v1beta1"
+
+
+def wait_to_succeed(name, namespace, timeout):
+    """Wait until the specified TFJob succeeds."""
+    return watch.wait_to_succeed(name=name, namespace=namespace,
+                                 timeout=timeout, group=GROUP, plural=PLURAL,
+                                 version=VERSION)
 
 
 # This function converts Katib Experiment HP results to args.
@@ -97,7 +105,8 @@ def create_katib_experiment_task(experiment_name, experiment_namespace,
                                     "command": [
                                         "python",
                                         "/opt/model.py",
-                                        "--tf-train-steps=" + str(training_steps),
+                                        "--tf-train-steps="
+                                            + str(training_steps),
                                         "--tf-learning-rate=${trialParameters.learningRate}",
                                         "--tf-batch-size=${trialParameters.batchSize}"
                                     ]
@@ -123,7 +132,8 @@ def create_katib_experiment_task(experiment_name, experiment_namespace,
                                     "command": [
                                         "python",
                                         "/opt/model.py",
-                                        "--tf-train-steps=" + str(training_steps),
+                                        "--tf-train-steps="
+                                            + str(training_steps),
                                         "--tf-learning-rate=${trialParameters.learningRate}",
                                         "--tf-batch-size=${trialParameters.batchSize}"
                                     ]
@@ -139,6 +149,7 @@ def create_katib_experiment_task(experiment_name, experiment_namespace,
     # Configure parameters for the Trial template.
     trial_template = V1beta1TrialTemplate(
         primary_container_name="tensorflow",
+        primary_pod_labels={"training.kubeflow.org/job-role": "master"},
         trial_parameters=[
             V1beta1TrialParameterSpec(
                 name="learningRate",
