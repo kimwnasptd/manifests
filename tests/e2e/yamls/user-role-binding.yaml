@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pipeline-runner
+  name: user-pipeline-runner
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pipeline-runner
 subjects:
-- kind: ServiceAccount
-  name: pipeline-runner
+- kind: User
+  name: kubeflow-user-example-com
