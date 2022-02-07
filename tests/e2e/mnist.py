@@ -9,7 +9,7 @@ import kfp.dsl as dsl
 from kubernetes import config
 
 import settings
-from utils import katib, kfserving, tfjob, watch
+from utils import isvc, katib, kfserving, tfjob
 
 config.load_kube_config()
 
@@ -39,7 +39,8 @@ def mnist_pipeline(name=settings.PIPELINE_NAME,
                                        katib_op, model_volume_op)
 
     # Create the KFServing inference.
-    kfserving.create_kfserving_task(name, namespace, tfjob_op, model_volume_op)
+    kfserving.create_kfserving_task(name, namespace, tfjob_op,
+                                    model_volume_op)
 
 
 if __name__ == "__main__":
@@ -49,6 +50,22 @@ if __name__ == "__main__":
     kfp_client.runs.api_client.default_headers.update(
         {"kubeflow-userid": "kubeflow-user-example-com"})
 
+    # create the KFP run
+    run_id = kfp_client.create_run_from_pipeline_func(
+        mnist_pipeline,
+        namespace=settings.NAMESPACE,
+        arguments={},
+    ).run_id
+    print("Run ID: ", run_id)
+
+    katib.wait_to_create(name=settings.EXPERIMENT_NAME,
+                         namespace=settings.NAMESPACE,
+                         timeout=settings.TIMEOUT)
+
+    tfjob.wait_to_create(name=settings.EXPERIMENT_NAME,
+                         namespace=settings.NAMESPACE,
+                         timeout=settings.TIMEOUT)
+
     tfjob.wait_to_succeed(name=settings.TFJOB_NAME,
                           namespace=settings.NAMESPACE,
                           timeout=settings.TIMEOUT)
@@ -57,9 +74,10 @@ if __name__ == "__main__":
                           namespace=settings.NAMESPACE,
                           timeout=settings.TIMEOUT)
 
-    # run_id = kfp_client.create_run_from_pipeline_func(
-    # mnist_pipeline,
-    # namespace=settings.NAMESPACE,
-    # arguments={},
-    # ).run_id
-    # print("Run ID: ", run_id)
+    isvc.wait_to_create(settings.ISVC_NAME,
+                        namespace=settings.NAMESPACE,
+                        timeout=settings.TIMEOUT)
+
+    isvc.wait_to_succeed(settings.ISVC_NAME,
+                         namespace=settings.NAMESPACE,
+                         timeout=settings.TIMEOUT)

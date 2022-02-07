@@ -15,8 +15,15 @@ PLURAL = "experiments"
 VERSION = "v1beta1"
 
 
+def wait_to_create(name, namespace, timeout):
+    """Wait until the specified Katib Experiment gets created."""
+    return watch.wait_created_cr(name, namespace,
+                                 timeout=timeout, group=GROUP, plural=PLURAL,
+                                 version=VERSION)
+
+
 def wait_to_succeed(name, namespace, timeout):
-    """Wait until the specified TFJob succeeds."""
+    """Wait until the specified Katib Experiment succeeds."""
     return watch.wait_to_succeed(name=name, namespace=namespace,
                                  timeout=timeout, group=GROUP, plural=PLURAL,
                                  version=VERSION)

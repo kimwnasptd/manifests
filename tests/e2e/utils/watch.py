@@ -8,6 +8,7 @@ def wait_created_cr(name, namespace, group, version, plural, timeout):
 
     fn = custom_api.list_namespaced_custom_object
 
+    print("Waiting for %s %s.%s to get created..." % (name, plural, group))
     for event in w.stream(func=fn, namespace=namespace, group=group,
                           version=version, plural=plural,
                           timeout_seconds=timeout):
@@ -19,7 +20,7 @@ def wait_created_cr(name, namespace, group, version, plural, timeout):
             continue
 
         # the requested CR got created
-        print("'%s' %s.%s got created." % (name, plural, group))
+        print("%s %s.%s got created." % (name, plural, group))
         w.stop()
         return True
 
@@ -28,6 +29,7 @@ def wait_created_cr(name, namespace, group, version, plural, timeout):
 
 
 def succeeded(job):
+    """Check if the CR has either a Ready or Succeeded condition"""
     if "status" not in job:
         return False
 
@@ -35,10 +37,11 @@ def succeeded(job):
         return False
 
     for condition in job["status"]["conditions"]:
-        if "Succeeded" not in condition["type"]:
-            continue
+        if "Succeeded" in condition["type"]:
+            return condition["status"] == "True"
 
-        return condition["status"] == "True"
+        if "Ready" in condition["type"]:
+            return condition["status"] == "True"
 
     return False
 
@@ -51,6 +54,7 @@ def wait_to_succeed(name, namespace, group, version, plural, timeout):
     cr = {}
     fn = custom_api.list_namespaced_custom_object
 
+    print("Waiting for %s %s.%s to succeed..." % (name, plural, group))
     for event in w.stream(func=fn, namespace=namespace, group=group,
                           version=version, plural=plural,
                           timeout_seconds=timeout):

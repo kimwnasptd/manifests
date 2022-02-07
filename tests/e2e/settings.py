@@ -1,5 +1,5 @@
 NAMESPACE = "kubeflow-user-example-com"
-TIMEOUT = 5
+TIMEOUT = 300
 
 PIPELINE_NAME = "mnist-e2e"
 EXPERIMENT_NAME = "mnist-e2e"
