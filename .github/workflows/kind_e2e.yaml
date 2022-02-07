@@ -34,7 +34,7 @@ jobs:
           #kind-image-sha: sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
           #cluster-suffix: c${{ github.run_id }}.local
         - cluster: v1.20.7
-          k8s-version: v1.21.1
+          k8s-version: v1.20.7
           kind-version: v0.11.1
           kind-image-sha: sha256:688fba5ce6b825be62a7c7fe1415b35da2bdfbb5a69227c499ea4cc0008661ca
           cluster-suffix: c${{ github.run_id }}.local
@@ -105,6 +105,12 @@ jobs:
       run: |
         set -x
         kind create cluster --config kind.yaml
+    - name: Install Kustomize
+      working-directory: ./tests/e2e
+      run: |
+        curl -Lo ./kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64
+        chmod +x ./kustomize
+        sudo mv kustomize /usr/local/bin
     - name: Install Kubeflow Components
       working-directory: ./tests/e2e
       run: |
