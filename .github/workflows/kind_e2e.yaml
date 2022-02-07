@@ -61,7 +61,7 @@ jobs:
         chmod +x ./kind
         sudo mv kind /usr/local/bin
     - name: Configure KinD Cluster
-      working-directory: ./src/knative.dev/serving
+      working-directory: ./tests/e2e
       run: |
         set -x
         # KinD configuration.
