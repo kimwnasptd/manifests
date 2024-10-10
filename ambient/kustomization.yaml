@@ -1,4 +1,4 @@
-kustomize.config.k8s.io/v1beta1
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 sortOptions:
@@ -37,9 +37,9 @@ resources:
 - ../common/cert-manager/cert-manager/base
 - ../common/cert-manager/kubeflow-issuer/base
 # Istio
-- ../common/istio-1-22/istio-crds/base
-- ../common/istio-1-22/istio-namespace/base
-- ../common/istio-1-22/istio-install/overlays/oauth2-proxy
+- ../common/istio-ambient-1-22/istio-crds/base
+- ../common/istio-ambient-1-22/istio-namespace/base
+- ../common/istio-ambient-1-22/istio-install/overlays/oauth2-proxy
 # oauth2-proxy
 - ../common/oidc-client/oauth2-proxy/overlays/m2m-self-signed
 # Dex
